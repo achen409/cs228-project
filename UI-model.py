@@ -1,3 +1,4 @@
+
 from nicegui import ui, run
 import numpy as np
 import matplotlib.pyplot as plt
@@ -141,7 +142,7 @@ with ui.row().classes("w-full no-wrap items-start"):
         epochs_input = ui.input("Epochs", value="2").classes("text-lg")
         batch_size_input = ui.input("Batch Size", value="128").classes("text-lg")
 
-        async def train():
+        def train():
             try:
                 print("TRAIN STARTED")
 
@@ -184,16 +185,16 @@ with ui.row().classes("w-full no-wrap items-start"):
                 batch_val = int(batch_size_input.value)
 
                 # train model (sync)
-                model = await run.cpu_bound(build_and_train,
-                                    x_poisoned, y_poison_cat,
-                                    lr_val, epochs_val, batch_val)
-                #model = build_model(lr_val)
-                #model.fit(
-                #    x_poisoned, y_poison_cat,
-                #   epochs=epochs_val,
-                #    batch_size=batch_val,
-                #    verbose=0,
-                #) 
+                #model = await run.cpu_bound(build_and_train,
+                #                    x_poisoned, y_poison_cat,
+                #                    lr_val, epochs_val, batch_val)
+                model = build_model(lr_val)
+                model.fit(
+                    x_poisoned, y_poison_cat,
+                   epochs=epochs_val,
+                    batch_size=batch_val,
+                    verbose=0,
+                ) 
                 print("Evaluation")
                 # evaluate clean
                 preds_clean = model.predict(x_test, verbose=0)
