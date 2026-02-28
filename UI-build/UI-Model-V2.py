@@ -22,7 +22,7 @@ ui.label("Visualize how data poisoning affects model accuracy").classes(
 )
 #################################################################################
 with ui.row().classes("w-full no-wrap items-start"):
-    with ui.card().classes("w-1/4 p-4"):
+    with ui.card().classes("w-1/5 p-4"):
         ui.label("Poisoning Controls").classes("text-xl font-bold")
 
         dataset = ui.select(["MNIST"], value="MNIST", label="Dataset").classes("w-full text-lg")
@@ -44,6 +44,9 @@ with ui.row().classes("w-full no-wrap items-start"):
         lr_input = ui.input("Learning Rate", value="0.001").classes("text-lg")
         epochs_input = ui.input("Epochs", value="2").classes("text-lg")
         batch_size_input = ui.input("Batch Size", value="128").classes("text-lg")
+
+
+   
 
         ################################################################################
         async def train():
@@ -123,16 +126,10 @@ with ui.row().classes("w-full no-wrap items-start"):
                 poisoned_acc_ui.set_text("Accuracy on Poisoned Data:")
                 confusion_img_ui.set_source("")
 
-        ui.button("Train Model", on_click=train).classes(
-                "w-full bg-blue-500 text-white mt-2 text-lg"
-            )
-        ui.button("Reset Data", on_click=reset).classes(
-                "w-full bg-gray-400 text-white mt-2 text-lg"
-            )
 
         ##################################################################################
         # RIGHT PANEL
-    with ui.card().classes("w-3/4 p-4"):
+    with ui.card().classes("w-3/4 p-4"): # 8/20 12/20 
 
             with ui.row().classes("w-full justify-around"):
                 with ui.column():
@@ -161,7 +158,26 @@ with ui.row().classes("w-full no-wrap items-start"):
                 with ui.column().classes("ml-50"):
                     ui.label("Confusion Matrix").classes("text-xl font-bold mb-2 ml-25")
                     confusion_img_ui = ui.image().classes("w-[350px]")
+    
+    with ui.card().classes("w-1/5 p-4"): #####!!!!!!
+            
+                #ui.separator()
+                ui.label("Data Augmentation").classes("text-xl font-bold")
+                ui.label("Mislabelling").classes("text-lg")
+                Mislabelling = ui.slider(min=0, max=100, value = 20).props("label-always")
+                ui.label("Mixup_Augmentation").classes("text-lg")
+                Mixup_Augmentation = ui.slider(min=0, max=100, value = 20).props("label-always")
+                ui.label("Cutout_Augmentation").classes("text-lg")
+                Cutout_Augmentation = ui.slider(min=0, max=100, value = 20).props("label-always")
+                ui.label("Standard_Augmentation").classes("text-lg")
+                Standard_Augmentation = ui.slider(min=0, max=100, value = 20).props("label-always")
 
-
+                ui.separator()
+                ui.button("Train Model", on_click=train).classes(
+                        "w-full bg-blue-500 text-white mt-2 text-lg"
+                    )
+                ui.button("Reset Data", on_click=reset).classes(
+                        "w-full bg-gray-400 text-white mt-2 text-lg"
+                    )
 
 ui.run()
