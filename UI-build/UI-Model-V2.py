@@ -60,15 +60,11 @@ with ui.row().classes("w-full no-wrap items-start"):
             clean_img_ui.set_source(f"data:image/png;base64,{nn_model.render_mnist_image(clean_img)}")
             clean_label_ui.set_text(f"Label: {clean_label_value}")
 
-            # data augmentation
-            x_train_aug = x_train.copy()
-            y_train_aug = y_train.copy()
-
             # get hyperparams from ui
             mislabel_ratio = mislabel_aug.value / 100.0
             mixup_ratio = mixup_aug.value / 100.0
-            cutout_ratio = cutout_aug.value / 100.0
-            standard_ratio = standard_aug.value / 100.0
+            cutout_val = cutout_aug.value
+            standard_val = standard_aug.value
 
             x_train_aug = torch.tensor(x_train).unsqueeze(1)
             y_train_aug = torch.tensor(y_train).long()
@@ -85,21 +81,19 @@ with ui.row().classes("w-full no-wrap items-start"):
                 y_train_aug[idx] = noise
 
             # spatial augment
-            cutout = data_augmentation.CutoutAugmentation(K=8)
-            shift = data_augmentation.RandomShift(K=2)
+            cutout = data_augmentation.CutoutAugmentation(K=cutout_val)
+            shift = data_augmentation.RandomShift(K=standard_val)
 
             for i in range(len(x_train_aug)):
-                if random.random() < cutout_ratio:
-                    x_train_aug[i] = cutout(x_train_aug[i])
-                if random.random() < standard_ratio:
-                    x_train_aug[i] = shift(x_train_aug[i])
+                x_train_aug[i] = cutout(x_train_aug[i])
+                x_train_aug[i] = shift(x_train_aug[i])
 
             # mixup strength
             mixup_alpha = mixup_ratio * 0.4
 
             # prepare poisoned training data
-            x_poisoned = x_train_aug.squeeze(1).numpy()
-            y_poisoned = y_train_aug.numpy()
+            x_poisoned = x_train_aug.squeeze(1).numpy().copy()
+            y_poisoned = y_train_aug.numpy().copy()
 
 
             match poison_type.value:
@@ -206,12 +200,12 @@ with ui.row().classes("w-full no-wrap items-start"):
                 ui.label("Data Augmentation").classes("text-xl font-bold")
                 ui.label("Mislabelling").classes("text-lg")
                 mislabel_aug = ui.slider(min=0, max=100, value = 0).props("label-always")
-                ui.label("Mixup_Augmentation").classes("text-lg")
+                ui.label("Mixup Augmentation").classes("text-lg")
                 mixup_aug = ui.slider(min=0, max=100, value = 0).props("label-always")
-                ui.label("Cutout_Augmentation").classes("text-lg")
-                cutout_aug = ui.slider(min=0, max=100, value = 0).props("label-always")
-                ui.label("Standard_Augmentation").classes("text-lg")
-                standard_aug = ui.slider(min=0, max=100, value = 0).props("label-always")
+                ui.label("Cutout Augmentation").classes("text-lg")
+                cutout_aug = ui.slider(min=0, max=28, value = 0).props("label-always")
+                ui.label("Standard Augmentation").classes("text-lg")
+                standard_aug = ui.slider(min=0, max=14, value = 0).props("label-always")
 
                 ui.separator()
                 ui.button("Train Model", on_click=train).classes(
