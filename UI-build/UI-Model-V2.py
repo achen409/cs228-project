@@ -1,8 +1,10 @@
 from nicegui import ui, run
 import random
 from tensorflow.keras.datasets import mnist
+import torch
 import nn_model
 import posion_model
+import data_augmentation
 
 # -------------------------
 # Load MNIST once
@@ -57,9 +59,48 @@ with ui.row().classes("w-full no-wrap items-start"):
             clean_label_value = y_test[idx]
             clean_img_ui.set_source(f"data:image/png;base64,{nn_model.render_mnist_image(clean_img)}")
             clean_label_ui.set_text(f"Label: {clean_label_value}")
+
+            # data augmentation
+            x_train_aug = x_train.copy()
+            y_train_aug = y_train.copy()
+
+            # get hyperparams from ui
+            mislabel_ratio = mislabel_aug.value / 100.0
+            mixup_ratio = mixup_aug.value / 100.0
+            cutout_ratio = cutout_aug.value / 100.0
+            standard_ratio = standard_aug.value / 100.0
+
+            x_train_aug = torch.tensor(x_train).unsqueeze(1)
+            y_train_aug = torch.tensor(y_train).long()
+
+            # data augmentation calls
+            # mislabelling
+            if mislabel_ratio > 0:
+                n = len(y_train_aug)
+                n_noisy = int(mislabel_ratio * n)
+                idx = torch.randperm(n)[:n_noisy]
+                original = y_train_aug[idx]
+                noise = torch.randint(0, 9, size=(n_noisy,))
+                noise = (noise + (noise >= original)).long()
+                y_train_aug[idx] = noise
+
+            # spatial augment
+            cutout = data_augmentation.CutoutAugmentation(K=8)
+            shift = data_augmentation.RandomShift(K=2)
+
+            for i in range(len(x_train_aug)):
+                if random.random() < cutout_ratio:
+                    x_train_aug[i] = cutout(x_train_aug[i])
+                if random.random() < standard_ratio:
+                    x_train_aug[i] = shift(x_train_aug[i])
+
+            # mixup strength
+            mixup_alpha = mixup_ratio * 0.4
+
             # prepare poisoned training data
-            x_poisoned = x_train.copy()
-            y_poisoned = y_train.copy()
+            x_poisoned = x_train_aug.squeeze(1).numpy()
+            y_poisoned = y_train_aug.numpy()
+
 
             match poison_type.value:
                 case "Label Flip":
@@ -164,13 +205,13 @@ with ui.row().classes("w-full no-wrap items-start"):
                 #ui.separator()
                 ui.label("Data Augmentation").classes("text-xl font-bold")
                 ui.label("Mislabelling").classes("text-lg")
-                Mislabelling = ui.slider(min=0, max=100, value = 20).props("label-always")
+                mislabel_aug = ui.slider(min=0, max=100, value = 0).props("label-always")
                 ui.label("Mixup_Augmentation").classes("text-lg")
-                Mixup_Augmentation = ui.slider(min=0, max=100, value = 20).props("label-always")
+                mixup_aug = ui.slider(min=0, max=100, value = 0).props("label-always")
                 ui.label("Cutout_Augmentation").classes("text-lg")
-                Cutout_Augmentation = ui.slider(min=0, max=100, value = 20).props("label-always")
+                cutout_aug = ui.slider(min=0, max=100, value = 0).props("label-always")
                 ui.label("Standard_Augmentation").classes("text-lg")
-                Standard_Augmentation = ui.slider(min=0, max=100, value = 20).props("label-always")
+                standard_aug = ui.slider(min=0, max=100, value = 0).props("label-always")
 
                 ui.separator()
                 ui.button("Train Model", on_click=train).classes(
