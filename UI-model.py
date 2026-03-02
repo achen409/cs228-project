@@ -1,4 +1,5 @@
-from nicegui import ui
+
+from nicegui import ui, run
 import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO
@@ -64,6 +65,18 @@ def build_model(lr_value: float):
                   metrics=["accuracy"])
     return model
 
+def build_and_train(x_poisoned, y_poison_cat, lr_val, epochs_val, batch_val):
+    model = build_model(lr_val)
+    model.fit(
+        x_poisoned,
+        y_poison_cat,
+        epochs=epochs_val,
+        batch_size=batch_val,
+        verbose=0,
+    )
+    return model
+
+
 
 def plot_confusion(cm):
     fig, ax = plt.subplots(figsize=(6, 6), dpi=120)
@@ -91,9 +104,11 @@ def plot_confusion(cm):
 # UI layout
 # -------------------------
 
-ui.page_title("Adversarial Stress Test: Neural Network")
+poison_precent = 0
 
-ui.label("Adversarial Stress Test: Neural Network").classes(
+ui.page_title("Adversarial Stress Test: Neural Network - V0.1")
+
+ui.label("Adversarial Stress Test: Neural Network - V0.1").classes(
     "text-3xl font-bold text-center w-full mt-4"
 )
 ui.label("Visualize how data poisoning affects model accuracy").classes(
@@ -109,7 +124,7 @@ with ui.row().classes("w-full no-wrap items-start"):
         dataset = ui.select(["MNIST"], value="MNIST", label="Dataset").classes("w-full text-lg")
 
         ui.label("% of Data to Poison").classes("text-lg")
-        poison_percent = ui.slider(min=0, max=100, value=20).props("label-always")
+        poison_percent = ui.slider(min=0, max=100, value = poison_precent).props("label-always")
 
         poison_type = ui.select(
             ["Label Flip", "Noise Injection"],
@@ -170,14 +185,17 @@ with ui.row().classes("w-full no-wrap items-start"):
                 batch_val = int(batch_size_input.value)
 
                 # train model (sync)
+                #model = await run.cpu_bound(build_and_train,
+                #                    x_poisoned, y_poison_cat,
+                #                    lr_val, epochs_val, batch_val)
                 model = build_model(lr_val)
                 model.fit(
                     x_poisoned, y_poison_cat,
-                    epochs=epochs_val,
+                   epochs=epochs_val,
                     batch_size=batch_val,
                     verbose=0,
-                )
-
+                ) 
+                print("Evaluation")
                 # evaluate clean
                 preds_clean = model.predict(x_test, verbose=0)
                 preds_clean_labels = np.argmax(preds_clean, axis=1)

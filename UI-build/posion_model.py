@@ -1,6 +1,7 @@
 #posion_model.py
 from torchvision import datasets, transforms
 import torch
+import random
 from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
 import numpy as np
@@ -105,3 +106,27 @@ def twentyfive_precent_incresae_rescale(images,labels, percent=0.1):
   return Rescale_image(images, labels, stretch_factor=0.25,percent_images=percent)
 def seventy_fiveprecent_incresae_rescale(images,labels, percent=0.1):
   return Rescale_image(images, labels, stretch_factor=0.75,percent_images=percent)
+
+#################################################################
+
+
+def apply_label_flip(y, percent):
+    y_poisoned = y.copy()
+    n = int(len(y) * percent / 100)
+    if n == 0:
+        return y_poisoned
+    idxs = np.random.choice(len(y), n, replace=False)
+    for i in idxs:
+        new_label = random.randint(0, 9)
+        while new_label == y_poisoned[i]:
+            new_label = random.randint(0, 9)
+        y_poisoned[i] = new_label
+    return y_poisoned
+
+
+def apply_noise(x, strength):
+    noise = np.random.normal(0, strength, x.shape).astype("float32")
+    x_noisy = np.clip(x + noise, 0, 1)
+    return x_noisy
+
+

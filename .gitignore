@@ -1,1 +1,5 @@
 data
+__pycache__/
+UI-build/__pycache__/nn_model.cpython-312.pyc
+UI-build/__pycache__/posion_model.cpython-312.pyc
+UI-build/cuid-keyring_1.1-1_all.*
