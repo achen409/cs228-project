@@ -60,12 +60,10 @@ def Background_recolor(images, recolor = 1.0, percent=0.1):
     return M_images
 ####################################################
 #Rescale the number in the image 
-def Rescale_image(images, labels,percent_images=0.1, stretch_factor=0.1):
-    M_images = images.clone()
-    M_labels = labels.clone()
-    num_samples = len(images)
-    num_modify = int(percent_images * num_samples)
-    M_indices = torch.randperm(num_samples)[:num_modify]
+def Rescale_image(images, percent_images=0.1, stretch_factor=0.1):
+    M_images = images.copy()
+    n = int(len(images) * percent_images / 100)
+    M_indices = np.random.choice(len(images), n, replace=False)
     selected = M_images[M_indices]
     ########## Upscale ###############
     new_size = int(28 * stretch_factor)
@@ -77,10 +75,10 @@ def Rescale_image(images, labels,percent_images=0.1, stretch_factor=0.1):
     cropped = stretched[:, :, top:top+28, left:left+28]
     #########################################################
     M_images[M_indices] = cropped
-    return M_labels, M_images, M_indices
+    return M_images
 ###############################################################
 #Recolor the WHOLE number in the image 
-def Num_recolor(images, recolor = 1, percent=0.1, num_classes = 10):
+def Num_recolor(images, recolor = 1, percent=0.1):
    ###############           #################
     M_images = images.copy()
     print(f"Shape of the image {M_images.shape}")
@@ -92,6 +90,23 @@ def Num_recolor(images, recolor = 1, percent=0.1, num_classes = 10):
     ###########################################################
     selected = M_images[M_indices]
     selected[selected != 0] = recolor
+    M_images[M_indices] = selected
+    return M_images######################################
+##############################################################
+def color_invert(images, percent=0.1):
+   ###############           #################
+    M_images = images.copy()
+    print(f"Shape of the image {M_images.shape}")
+    if M_images.ndim == 2: 
+      M_images[M_images != 0 ] = 0.001
+      M_images[M_images == 0 ] = 0.999
+      return M_images
+    n = int(len(images) * percent / 100)
+    M_indices = np.random.choice(len(images), n, replace=False)#torch.randperm(num_samples)[:num_poison]
+    ###########################################################
+    selected = M_images[M_indices]
+    M_images[M_images != 0 ] = 0.001
+    M_images[M_images == 0 ] = 0.999
     M_images[M_indices] = selected
     return M_images######################################
 ##Presets: 
