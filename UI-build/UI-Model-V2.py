@@ -33,7 +33,7 @@ with ui.row().classes("w-full no-wrap items-start"):
         poison_percent = ui.slider(min=0, max=100, value = 20).props("label-always")
 
         poison_type = ui.select(
-            ["Label Flip", "Noise Injection"],
+            ["Label Flip", "Noise Injection", "Void Background","Void Number", "Binary Recolor"],
             value="Label Flip",
             label="Poisoning Type",
         ).classes("w-full text-lg")
@@ -89,7 +89,7 @@ with ui.row().classes("w-full no-wrap items-start"):
                 x_train_aug[i] = shift(x_train_aug[i])
 
             # mixup strength
-            mixup_alpha = mixup_ratio * 0.4
+            #mixup_alpha = mixup_ratio * 0.4
 
             # prepare poisoned training data
             x_poisoned = x_train_aug.squeeze(1).numpy().copy()
@@ -121,6 +121,42 @@ with ui.row().classes("w-full no-wrap items-start"):
                     x_test_poisoned = posion_model.apply_noise(x_test, poison_strength.value)
                     y_test_poisoned = y_test
                 #########################################
+                case"Void Background":
+                    print(f"Posion vlaue at start: {poison_percent.value}")
+                    x_poisoned = posion_model.void_data_background(x_poisoned, poison_percent.value)
+                    void_img = posion_model.void_data_background(clean_img, poison_percent.value)
+                    poisoned_img_ui.set_source(
+                            f"data:image/png;base64,{nn_model.render_mnist_image(void_img)}"
+                        )
+                    poisoned_label_ui.set_text(f"Label: {clean_label_value}")
+                    print("Posion type: Recoloring")
+                    x_test_poisoned = posion_model.void_data_background(x_test, poison_percent.value)
+                    y_test_poisoned = y_test
+                ###########################################
+                case"Void Number":
+                    print(f"Posion vlaue at start: {poison_percent.value}")
+                    x_poisoned = posion_model.void_data_number(x_poisoned, poison_percent.value)
+                    void_img = posion_model.void_data_number(clean_img, poison_percent.value)
+                    poisoned_img_ui.set_source(
+                            f"data:image/png;base64,{nn_model.render_mnist_image(void_img)}"
+                        )
+                    poisoned_label_ui.set_text(f"Label: {clean_label_value}")
+                    print("Posion type: Recoloring")
+                    x_test_poisoned = posion_model.void_data_number(x_test, poison_percent.value)
+                    y_test_poisoned = y_test
+                ###########################################
+                case "Binary Recolor":
+                    print(f"Posion vlaue at start: {poison_percent.value}")
+                    x_poisoned = posion_model.Binary_colors(x_poisoned, poison_percent.value)
+                    void_img = posion_model.Binary_colors(clean_img, poison_percent.value)
+                    poisoned_img_ui.set_source(
+                            f"data:image/png;base64,{nn_model.render_mnist_image(void_img)}"
+                        )
+                    poisoned_label_ui.set_text(f"Label: {clean_label_value}")
+                    print("Posion type: Recoloring")
+                    x_test_poisoned = posion_model.Binary_colors(x_test, poison_percent.value)
+                    y_test_poisoned = y_test
+                ###########################################
                 case _:
                     print("Default error")
                 #########################################

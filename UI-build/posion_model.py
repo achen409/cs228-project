@@ -44,18 +44,20 @@ def backdoor_poison(images,labels, percent=0.1, target_label = 0, trigger = 1.0)
   return poisoned_labels, poisoned_images, indices
 #######################################################################################
 #Change the background of the image 
-def Background_recolor(images,labels, Backgroud_recolor = 0, percent=0.1, num_classes = 10):
+def Background_recolor(images, recolor = 1.0, percent=0.1):
     ###############           #################
-    M_images = images.clone()
-    M_labels = labels.clone()
-    num_samples = len(labels)
-    num_poison = int(percent * num_samples)
-    M_indices = torch.randperm(num_samples)[:num_poison]
+    M_images = images.copy()
+    print(f"Shape of the image {M_images.shape}")
+    if M_images.ndim == 2: 
+      M_images[M_images == 0 ] = recolor
+      return M_images
+    n = int(len(images) * percent / 100)
+    M_indices = np.random.choice(len(images), n, replace=False)#torch.randperm(num_samples)[:num_poison]
     ###########################################################
     selected = M_images[M_indices]
-    selected[selected == 0] = Backgroud_recolor
+    selected[selected == 0] = recolor
     M_images[M_indices] = selected
-    return M_labels, M_images, M_indices
+    return M_images
 ####################################################
 #Rescale the number in the image 
 def Rescale_image(images, labels,percent_images=0.1, stretch_factor=0.1):
@@ -78,26 +80,29 @@ def Rescale_image(images, labels,percent_images=0.1, stretch_factor=0.1):
     return M_labels, M_images, M_indices
 ###############################################################
 #Recolor the WHOLE number in the image 
-def Num_recolor(images,labels, recolor = 1, percent=0.1, num_classes = 10):
-    ###############           #################
-      M_images = images.clone()
-      M_labels = labels.clone()
-      num_samples = len(labels)
-      num_poison = int(percent * num_samples)
-      M_indices = torch.randperm(num_samples)[:num_poison]
+def Num_recolor(images, recolor = 1, percent=0.1, num_classes = 10):
+   ###############           #################
+    M_images = images.copy()
+    print(f"Shape of the image {M_images.shape}")
+    if M_images.ndim == 2: 
+      M_images[M_images != 0 ] = recolor
+      return M_images
+    n = int(len(images) * percent / 100)
+    M_indices = np.random.choice(len(images), n, replace=False)#torch.randperm(num_samples)[:num_poison]
     ###########################################################
-      selected = M_images[M_indices]
-      selected[selected != 0] = recolor
-      M_images[M_indices] = selected
-      return M_labels, M_images, M_indices
-#############################################################
+    selected = M_images[M_indices]
+    selected[selected != 0] = recolor
+    M_images[M_indices] = selected
+    return M_images######################################
 ##Presets: 
 
 #Recolor Presets: 
-def void_data_number(images,labels, percent=0.1):
-  return Num_recolor(images, labels, recolor= 0,percent=percent)
-def void_data_background(images,labels, percent=0.1):
-  return Background_recolor(images, labels, recolor= 1,percent=percent)
+def void_data_number(images, percent=0.1):
+  return Num_recolor(images, recolor = 0, percent=percent)
+def Binary_colors(images, percent=0.1):
+  return Num_recolor(images, recolor = 1, percent=percent)
+def void_data_background(images, percent=0.1):
+  return Background_recolor(images, recolor = 1.0, percent=percent)
 
 #rescale Presets: 
 def fifty_precent_incresae_rescale(images,labels, percent=0.1):
