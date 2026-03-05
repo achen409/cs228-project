@@ -38,10 +38,12 @@ with ui.row().classes("w-full no-wrap items-start"):
             label="Poisoning Type",
         ).classes("w-full text-lg")
     
+
+
         ui.label("Poison Strength (Noise)").classes("text-lg")
         poison_strength = ui.slider(min=0, max=1, step=0.1, value=0.3).props("label-always")
         ui.label("Rescale Image").classes("text-lg")
-        Rescale_slider = ui.slider(min=0, max=1, step=0.1, value=0).props("label-always")
+        Rescale_slider = ui.slider(min=0, max=10, step=0.1, value=0).props("label-always")
 
         ui.separator()
         ui.label("Training Hyperparameters").classes("text-xl font-bold")

@@ -6,6 +6,7 @@ from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.nn.functional as F
+import cv2
 
 #random label flipping
 def label_flip_poison(images,labels, percent=0.1, num_classes = 10):
@@ -60,7 +61,7 @@ def Background_recolor(images, recolor = 1.0, percent=0.1):
     return M_images
 ####################################################
 #Rescale the number in the image 
-def Rescale_image(images, percent_images=0.1, stretch_factor=0.1):
+def Rescale_image_1(images, percent_images=0.1, stretch_factor=0.1):
     M_images = images.copy()
     n = int(len(images) * percent_images / 100)
     M_indices = np.random.choice(len(images), n, replace=False)
@@ -150,3 +151,56 @@ def apply_noise(x, strength):
     return x_noisy
 
 
+#########################################################################
+
+
+def Rescale_image(images, percent_images=10, stretch_factor=1.2):
+
+    # ---------------------------
+    # CASE 1: Single image (28,28)
+    # ---------------------------
+    if images.ndim == 2:
+
+        new_size = max(28, int(28 * stretch_factor))
+        stretched = cv2.resize(images, (new_size, new_size), interpolation=cv2.INTER_LINEAR)
+
+        max_offset = new_size - 28
+
+        if max_offset > 0:
+            top = np.random.randint(0, max_offset + 1)
+            left = np.random.randint(0, max_offset + 1)
+        else:
+            top = 0
+            left = 0
+
+        return stretched[top:top+28, left:left+28]
+
+    # ---------------------------
+    # CASE 2: Dataset (N,28,28)
+    # ---------------------------
+    M_images = images.copy()
+
+    n = int(len(images) * percent_images / 100)
+    indices = np.random.choice(len(images), n, replace=False)
+
+    for idx in indices:
+
+        img = M_images[idx]
+
+        new_size = max(28, int(28 * stretch_factor))
+        stretched = cv2.resize(img, (new_size, new_size), interpolation=cv2.INTER_LINEAR)
+
+        max_offset = new_size - 28
+
+        if max_offset > 0:
+            top = np.random.randint(0, max_offset + 1)
+            left = np.random.randint(0, max_offset + 1)
+        else:
+            top = 0
+            left = 0
+
+        cropped = stretched[top:top+28, left:left+28]
+
+        M_images[idx] = cropped
+
+    return M_images
