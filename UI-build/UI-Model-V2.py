@@ -38,8 +38,6 @@ with ui.row().classes("w-full no-wrap items-start"):
             label="Poisoning Type",
         ).classes("w-full text-lg")
     
-
-
         ui.label("Poison Strength (Noise)").classes("text-lg")
         poison_strength = ui.slider(min=0, max=1, step=0.1, value=0.3).props("label-always")
         ui.label("Rescale Image").classes("text-lg")
@@ -50,9 +48,6 @@ with ui.row().classes("w-full no-wrap items-start"):
         lr_input = ui.input("Learning Rate", value="0.001").classes("text-lg")
         epochs_input = ui.input("Epochs", value="2").classes("text-lg")
         batch_size_input = ui.input("Batch Size", value="128").classes("text-lg")
-
-
-   
 
         ################################################################################
         async def train():
@@ -98,7 +93,6 @@ with ui.row().classes("w-full no-wrap items-start"):
             # prepare poisoned training data
             x_poisoned = x_train_aug.squeeze(1).numpy().copy()
             y_poisoned = y_train_aug.numpy().copy()
-
 
             match poison_type.value:
                 case "Label Flip":
@@ -209,11 +203,8 @@ with ui.row().classes("w-full no-wrap items-start"):
             confusion_img_ui.set_source(
                 f"data:image/png;base64,{nn_model.plot_confusion(cm)}"
             )
-                    
             print("TRAIN FINISHED")
             ####################################################################
-
-        
         def reset():
                 clean_img_ui.set_source("")
                 poisoned_img_ui.set_source("")
@@ -222,8 +213,6 @@ with ui.row().classes("w-full no-wrap items-start"):
                 clean_acc_ui.set_text("Accuracy on Clean Data:")
                 poisoned_acc_ui.set_text("Accuracy on Poisoned Data:")
                 confusion_img_ui.set_source("")
-
-
         ##################################################################################
         # RIGHT PANEL
     with ui.card().classes("w-3/4 p-4"): # 8/20 12/20 
@@ -240,7 +229,6 @@ with ui.row().classes("w-full no-wrap items-start"):
                     poisoned_label_ui = ui.label("Label:").classes("text-lg text-red-500")
 
             ui.separator()
-
             with ui.row().classes("items-start gap-4"):
 
                 with ui.column().classes("w-auto"):
@@ -251,14 +239,12 @@ with ui.row().classes("w-full no-wrap items-start"):
                     poisoned_acc_ui = ui.label("Accuracy on Poisoned Data:") \
                         .classes("text-lg text-red-500")
 
-
                 with ui.column().classes("ml-50"):
                     ui.label("Confusion Matrix").classes("text-xl font-bold mb-2 ml-25")
                     confusion_img_ui = ui.image().classes("w-[350px]")
     
     with ui.card().classes("w-1/5 p-4"): #####!!!!!!
             
-                #ui.separator()
                 ui.label("Data Augmentation").classes("text-xl font-bold")
                 ui.label("Mislabelling").classes("text-lg")
                 mislabel_aug = ui.slider(min=0, max=100, value = 0).props("label-always")
