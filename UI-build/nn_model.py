@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.layers import Dense, Flatten, Input
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.optimizers import Adam
 import base64
@@ -31,7 +31,8 @@ print("Available devices:", tf.config.list_physical_devices())
 def build_model(lr_value: float):
     with tf.device(DEVICE):
         model = Sequential([
-            Flatten(input_shape=(28, 28)),
+            Input(shape=(28, 28)),
+            Flatten(),
             Dense(128, activation='relu'),
             Dense(10, activation='softmax')
         ])
