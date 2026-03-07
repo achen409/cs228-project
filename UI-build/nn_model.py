@@ -15,18 +15,15 @@ import matplotlib.pyplot as plt
 ##############################################################################
 # Detect device
 gpus = tf.config.list_physical_devices('GPU')
-
 if gpus:
     DEVICE = "/GPU:0"
     print("GPU detected. Using GPU.")
 else:
     DEVICE = "/CPU:0"
     print("No GPU detected. Using CPU.")
-
 print("TensorFlow version:", tf.__version__)
 print("Available devices:", tf.config.list_physical_devices())
 ##############################################################################
-
 
 def build_model(lr_value: float):
     with tf.device(DEVICE):
@@ -42,9 +39,9 @@ def build_model(lr_value: float):
             loss="categorical_crossentropy",
             metrics=["accuracy"]
         )
+        print(f"Model Metrics: {model.metrics}")
 
     return model
-
 
 def build_and_train(x_poisoned, y_poison_cat, lr_val, epochs_val, batch_val):
 
@@ -53,16 +50,21 @@ def build_and_train(x_poisoned, y_poison_cat, lr_val, epochs_val, batch_val):
     print("Build FINISHED")
 
     with tf.device(DEVICE):
-        model.fit(
+         history = model.fit(
             x_poisoned,
             y_poison_cat,
             epochs=epochs_val,
             batch_size=batch_val,
             verbose=0,
         )
-
+         
+    loss_accuary = []
+    print("Final Training Accuracy:", history.history["accuracy"][-1])
+    print("Final Training Loss:", history.history["loss"][-1])
+    loss_accuary.append(history.history["accuracy"][-1] * 100)
+    loss_accuary.append(history.history["loss"][-1])
     print("Fitting finished")
-    return model
+    return model, loss_accuary
 
 
 #################################################################################

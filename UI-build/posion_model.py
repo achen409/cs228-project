@@ -45,16 +45,18 @@ def color_invert(images, percent=0.1):
     M_images = images.copy()
     print(f"Shape of the image {M_images.shape}")
     if M_images.ndim == 2: 
-      M_images[M_images != 0 ] = 0.001
-      M_images[M_images == 0 ] = 0.999
-      return M_images
+      #M_images[M_images != 0 ] = 0.001
+      #M_images[M_images == 0 ] = 0.999  
+      #return M_images
+      return 1 - M_images
     n = int(len(images) * percent / 100)
     M_indices = np.random.choice(len(images), n, replace=False)#torch.randperm(num_samples)[:num_poison]
     ###########################################################
-    selected = M_images[M_indices]
-    M_images[M_images != 0 ] = 0.001
-    M_images[M_images == 0 ] = 0.999
-    M_images[M_indices] = selected
+    #selected = M_images[M_indices]
+    #M_images[selected != 0 ] = 0.001
+    #M_images[selected == 0 ] = 0.999
+    #M_images[M_indices] = selected
+    M_images[M_indices] = 1 - M_images[M_indices]
     return M_images
 ################################################
 ##Presets: 
@@ -80,10 +82,12 @@ def apply_label_flip(y, percent):
         return y_poisoned
     idxs = np.random.choice(len(y), n, replace=False)
     for i in idxs:
+        current_label = np.argmax(y_poisoned[i])
         new_label = random.randint(0, 9)
-        while new_label == y_poisoned[i]:
+        while new_label == current_label:#while new_label == np.argmax(y_poisoned[i]) :#y_poisoned[i]:
             new_label = random.randint(0, 9)
-        y_poisoned[i] = new_label
+        y_poisoned[i] = np.eye(10)[new_label]
+        #y_poisoned[i] = new_label
     return y_poisoned
 ######################################################################
 def apply_noise(x, strength):

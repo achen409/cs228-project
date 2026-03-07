@@ -17,7 +17,7 @@ x_test = x_test.astype("float32") / 255.0
 
 ui.page_title("Adversarial Stress Test: Neural Network - V0.1")
 
-ui.label("Adversarial Stress Test: Neural Network - V0.299").classes(
+ui.label("Adversarial Stress Test: Neural Network - V0.3").classes(
     "text-3xl font-bold text-center w-full mt-4"
 )
 ui.label("Visualize how data poisoning affects model accuracy").classes(
@@ -40,7 +40,7 @@ with ui.row().classes("w-full no-wrap items-start"):
         ).classes("w-full text-lg")
     
         ui.label("Poison Strength (Noise)").classes("text-lg")
-        poison_strength = ui.slider(min=0, max=1, step=0.1, value=0.3).props("label-always")
+        poison_strength = ui.slider(min=0, max=1, step=0.1, value=0.0).props("label-always")
         ui.label("Rescale Image").classes("text-lg")
         Rescale_slider = ui.slider(min=0, max=10, step=0.1, value=0).props("label-always")
 
@@ -102,6 +102,7 @@ with ui.row().classes("w-full no-wrap items-start"):
             match poison_type.value:
                 case "Label Flip":
                     print("Posion type: Label Filp")
+                    #print(y_poisoned.shape)
                     y_poisoned = posion_model.apply_label_flip(y_poisoned, poison_percent.value)
                     wrong_label = random.randint(0, 9)
                     while wrong_label == clean_label_value:
@@ -115,6 +116,7 @@ with ui.row().classes("w-full no-wrap items-start"):
                     x_test_poisoned = x_test
                 #########################################
                 case "Noise Injection":
+                    print( f"  posion str: {poison_strength.value}") 
                     x_poisoned = posion_model.apply_noise(x_poisoned, poison_strength.value)
                     noisy_img = posion_model.apply_noise(clean_img, poison_strength.value)
                     poisoned_img_ui.set_source(
@@ -196,18 +198,25 @@ with ui.row().classes("w-full no-wrap items-start"):
             lr_val = float(lr_input.value)
             epochs_val = int(epochs_input.value)
             batch_val = int(batch_size_input.value)
-            clean_model = await run.io_bound( nn_model.build_and_train,x_train_aug, y_train_aug,lr_val, epochs_val, batch_val)
-            poisoned_model = await run.io_bound( nn_model.build_and_train,x_poisoned, y_poisoned,lr_val, epochs_val, batch_val)
+            clean_model ,clean_results = await run.io_bound( nn_model.build_and_train,x_train_aug, y_train_aug,lr_val, epochs_val, batch_val)
+            poisoned_model, poisoned_results = await run.io_bound( nn_model.build_and_train,x_poisoned, y_poisoned,lr_val, epochs_val, batch_val)
             ####################################################################
             preds_clean = await run.io_bound(clean_model.predict,x_test, verbose = 0)
             preds_clean_labels = nn_model.np.argmax(preds_clean, axis=1)
             acc_clean = nn_model.np.mean(preds_clean_labels == y_test) * 100
-            clean_acc_ui.set_text(f"Accuracy on Clean Data: {acc_clean:.2f}%")
+            clean_acc_ui.set_text(f"Test Accuracy on Clean Model: {acc_clean:.2f}%") 
+            clean_loss_ui.set_text(f"Training loss: {clean_results[1]:.4f}")
+            clean_train_ui.set_text(f" Training Accuary: {clean_results[0]:.2f}%")
 
             preds_poison = await run.io_bound(poisoned_model.predict,x_test_poisoned, verbose=0)
             preds_poison_labels = nn_model.np.argmax(preds_poison, axis=1)
             acc_poison = nn_model.np.mean(preds_poison_labels == y_test_poisoned) * 100
-            poisoned_acc_ui.set_text(f"Accuracy on Poisoned Data: {acc_poison:.2f}%")
+
+            poisoned_acc_ui.set_text(f"Test Accuracy on Poisoned Model: {acc_poison:.2f}%") 
+            poisoned_loss_ui.set_text(f"Training loss: {poisoned_results[1]:.4f}")
+            poisoned_train_ui.set_text(f"Training Accuary: {poisoned_results[0]:.2f}%")
+           
+           
             print("Confusion matrix generations")
             # 10x10 confusion matrix
             cm = await run.io_bound(nn_model.confusion_matrix,y_test_poisoned, preds_poison_labels, labels=list(range(10)))
@@ -222,8 +231,12 @@ with ui.row().classes("w-full no-wrap items-start"):
                 poisoned_img_ui.set_source("")
                 clean_label_ui.set_text("Label:")
                 poisoned_label_ui.set_text("Label:")
-                clean_acc_ui.set_text("Accuracy on Clean Data:")
-                poisoned_acc_ui.set_text("Accuracy on Poisoned Data:")
+                clean_acc_ui.set_text("Test Accuracy on Clean Model:")
+                poisoned_acc_ui.set_text("Test Accuracy on Poisoned Model:")
+                clean_loss_ui.set_text("")
+                clean_train_ui.set_text("")
+                poisoned_loss_ui.set_text("")
+                poisoned_train_ui.set_text("")
                 confusion_img_ui.set_source("")
         ##################################################################################
         # RIGHT PANEL
@@ -245,11 +258,20 @@ with ui.row().classes("w-full no-wrap items-start"):
 
                 with ui.column().classes("w-auto"):
                     ui.label("Model Performance").classes("text-xl font-bold")
-                    clean_acc_ui = ui.label("Accuracy on Clean Data:") \
+                    clean_acc_ui = ui.label("Test Accuracy on Clean Model:") \
+                        .classes("text-lg")
+                    clean_loss_ui = ui.label("") \
+                        .classes("text-lg")
+                    clean_train_ui = ui.label("") \
                         .classes("text-lg")
 
-                    poisoned_acc_ui = ui.label("Accuracy on Poisoned Data:") \
+                    poisoned_acc_ui = ui.label("Test Accuracy on Poisoned Model:") \
                         .classes("text-lg text-red-500")
+                    poisoned_loss_ui = ui.label("") \
+                        .classes("text-lg text-red-500")
+                    poisoned_train_ui = ui.label("") \
+                        .classes("text-lg text-red-500")
+                    
 
                 with ui.column().classes("ml-50"):
                     ui.label("Confusion Matrix").classes("text-xl font-bold mb-2 ml-25")
