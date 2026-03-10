@@ -1,10 +1,13 @@
 from nicegui import ui, run
 import random
 from tensorflow.keras.datasets import mnist
+from tensorflow.keras.utils import to_categorical
 import torch
 import nn_model
 import posion_model
 import data_augmentation
+
+random.seed(872)
 
 # -------------------------
 # Load MNIST once
@@ -16,7 +19,7 @@ x_test = x_test.astype("float32") / 255.0
 
 ui.page_title("Adversarial Stress Test: Neural Network - V0.1")
 
-ui.label("Adversarial Stress Test: Neural Network - V0.299").classes(
+ui.label("Adversarial Stress Test: Neural Network - V0.3").classes(
     "text-3xl font-bold text-center w-full mt-4"
 )
 ui.label("Visualize how data poisoning affects model accuracy").classes(
@@ -33,22 +36,21 @@ with ui.row().classes("w-full no-wrap items-start"):
         poison_percent = ui.slider(min=0, max=100, value = 20).props("label-always")
 
         poison_type = ui.select(
-            ["Label Flip", "Noise Injection"],
+            ["Label Flip", "Noise Injection", "Void Background","Void Number", "Binary Recolor", "Binary Color Invert", "Rescale Image"],
             value="Label Flip",
             label="Poisoning Type",
         ).classes("w-full text-lg")
     
         ui.label("Poison Strength (Noise)").classes("text-lg")
-        poison_strength = ui.slider(min=0, max=1, step=0.1, value=0.3).props("label-always")
+        poison_strength = ui.slider(min=0, max=1, step=0.1, value=0.0).props("label-always")
+        ui.label("Rescale Image").classes("text-lg")
+        Rescale_slider = ui.slider(min=0, max=10, step=0.1, value=0).props("label-always")
 
         ui.separator()
         ui.label("Training Hyperparameters").classes("text-xl font-bold")
         lr_input = ui.input("Learning Rate", value="0.001").classes("text-lg")
         epochs_input = ui.input("Epochs", value="2").classes("text-lg")
         batch_size_input = ui.input("Batch Size", value="128").classes("text-lg")
-
-
-   
 
         ################################################################################
         async def train():
@@ -92,13 +94,17 @@ with ui.row().classes("w-full no-wrap items-start"):
             mixup_alpha = mixup_ratio * 0.4
 
             # prepare poisoned training data
-            x_poisoned = x_train_aug.squeeze(1).numpy().copy()
-            y_poisoned = y_train_aug.numpy().copy()
+            x_train_aug = x_train_aug.squeeze(1).cpu().numpy()
+            y_train_aug = y_train_aug.cpu().numpy()
+            y_train_aug = to_categorical(y_train_aug, num_classes=10)
 
+            x_poisoned = x_train_aug.copy()
+            y_poisoned = y_train_aug.copy()
 
             match poison_type.value:
                 case "Label Flip":
                     print("Posion type: Label Filp")
+                    #print(y_poisoned.shape)
                     y_poisoned = posion_model.apply_label_flip(y_poisoned, poison_percent.value)
                     wrong_label = random.randint(0, 9)
                     while wrong_label == clean_label_value:
@@ -107,10 +113,12 @@ with ui.row().classes("w-full no-wrap items-start"):
                             f"data:image/png;base64,{nn_model.render_mnist_image(clean_img)}"
                         )
                     poisoned_label_ui.set_text(f"Label: {wrong_label}")
-                    y_test_poisoned = posion_model.apply_label_flip(y_test, poison_percent.value)
+                    # y_test_poisoned = posion_model.apply_label_flip(y_test, poison_percent.value)
+                    y_test_poisoned = y_test
                     x_test_poisoned = x_test
                 #########################################
                 case "Noise Injection":
+                    print( f"  posion str: {poison_strength.value}") 
                     x_poisoned = posion_model.apply_noise(x_poisoned, poison_strength.value)
                     noisy_img = posion_model.apply_noise(clean_img, poison_strength.value)
                     poisoned_img_ui.set_source(
@@ -118,28 +126,99 @@ with ui.row().classes("w-full no-wrap items-start"):
                         )
                     poisoned_label_ui.set_text(f"Label: {clean_label_value}")
                     print("Posion type: Noise Injection")
-                    x_test_poisoned = posion_model.apply_noise(x_test, poison_strength.value)
+                    # x_test_poisoned = posion_model.apply_noise(x_test, poison_strength.value)
                     y_test_poisoned = y_test
+                    x_test_poisoned = x_test
                 #########################################
+                case"Void Background":
+                    print(f"Posion vlaue at start: {poison_percent.value}")
+                    x_poisoned = posion_model.void_data_background(x_poisoned, poison_percent.value)
+                    void_img = posion_model.void_data_background(clean_img, poison_percent.value)
+                    poisoned_img_ui.set_source(
+                            f"data:image/png;base64,{nn_model.render_mnist_image(void_img)}"
+                        )
+                    poisoned_label_ui.set_text(f"Label: {clean_label_value}")
+                    print("Posion type: Recoloring")
+                    # x_test_poisoned = posion_model.void_data_background(x_test, poison_percent.value)
+                    y_test_poisoned = y_test
+                    x_test_poisoned = x_test
+                ###########################################
+                case"Void Number":
+                    print(f"Posion vlaue at start: {poison_percent.value}")
+                    x_poisoned = posion_model.void_data_number(x_poisoned, poison_percent.value)
+                    void_img = posion_model.void_data_number(clean_img, poison_percent.value)
+                    poisoned_img_ui.set_source(
+                            f"data:image/png;base64,{nn_model.render_mnist_image(void_img)}"
+                        )
+                    poisoned_label_ui.set_text(f"Label: {clean_label_value}")
+                    print("Posion type: Recoloring")
+                    # x_test_poisoned = posion_model.void_data_number(x_test, poison_percent.value)
+                    y_test_poisoned = y_test
+                    x_test_poisoned = x_test
+                ###########################################
+                case "Binary Recolor": # Binary Color Invert
+                    print(f"Posion vlaue at start: {poison_percent.value}")
+                    x_poisoned = posion_model.Binary_colors(x_poisoned, poison_percent.value)
+                    void_img = posion_model.Binary_colors(clean_img, poison_percent.value)
+                    poisoned_img_ui.set_source(
+                            f"data:image/png;base64,{nn_model.render_mnist_image(void_img)}"
+                        )
+                    poisoned_label_ui.set_text(f"Label: {clean_label_value}")
+                    print("Posion type: Recoloring")
+                    # x_test_poisoned = posion_model.Binary_colors(x_test, poison_percent.value)
+                    y_test_poisoned = y_test
+                    x_test_poisoned = x_test
+                ###########################################
+                case "Binary Color Invert":
+                    print(f"Posion vlaue at start: {poison_percent.value}")
+                    x_poisoned = posion_model.color_invert(x_poisoned, poison_percent.value)
+                    void_img = posion_model.color_invert(clean_img, poison_percent.value)
+                    poisoned_img_ui.set_source(
+                            f"data:image/png;base64,{nn_model.render_mnist_image(void_img)}"
+                        )
+                    poisoned_label_ui.set_text(f"Label: {clean_label_value}")
+                    print("Posion type: Recoloring")
+                    # x_test_poisoned = posion_model.color_invert(x_test, poison_percent.value)
+                    y_test_poisoned = y_test
+                    x_test_poisoned = x_test
+                ################################
+                case "Rescale Image": 
+                    x_poisoned = posion_model.Rescale_image(x_poisoned, poison_percent.value, Rescale_slider.value )
+                    void_img = posion_model.Rescale_image(clean_img, poison_percent.value, Rescale_slider.value)
+                    poisoned_img_ui.set_source(
+                            f"data:image/png;base64,{nn_model.render_mnist_image(void_img)}"
+                        )
+                    poisoned_label_ui.set_text(f"Label: {clean_label_value}")
+                    print("Posion type: Recoloring")
+                    # x_test_poisoned = posion_model.Rescale_image(x_test, poison_percent.value, Rescale_slider.value)
+                    y_test_poisoned = y_test
+                    x_test_poisoned = x_test
                 case _:
                     print("Default error")
                 #########################################
             print("Prediction Starting ")
-            y_poison_cat = nn_model.to_categorical(y_poisoned, 10)
             lr_val = float(lr_input.value)
             epochs_val = int(epochs_input.value)
             batch_val = int(batch_size_input.value)
-            model = await run.io_bound( nn_model.build_and_train,x_poisoned, y_poison_cat,lr_val, epochs_val, batch_val)
+            clean_model ,clean_results = await run.io_bound( nn_model.build_and_train,x_train_aug, y_train_aug,lr_val, epochs_val, batch_val)
+            poisoned_model, poisoned_results = await run.io_bound( nn_model.build_and_train,x_poisoned, y_poisoned,lr_val, epochs_val, batch_val)
             ####################################################################
-            preds_clean = await run.io_bound(model.predict,x_test, verbose = 0)
+            preds_clean = await run.io_bound(clean_model.predict,x_test, verbose = 0)
             preds_clean_labels = nn_model.np.argmax(preds_clean, axis=1)
             acc_clean = nn_model.np.mean(preds_clean_labels == y_test) * 100
-            clean_acc_ui.set_text(f"Accuracy on Clean Data: {acc_clean:.2f}%")
+            clean_acc_ui.set_text(f"Test Accuracy on Clean Model: {acc_clean:.2f}%") 
+            clean_loss_ui.set_text(f"Training loss: {clean_results[1]:.4f}")
+            clean_train_ui.set_text(f" Training Accuary: {clean_results[0]:.2f}%")
 
-            preds_poison = await run.io_bound(model.predict,x_test_poisoned, verbose=0)
+            preds_poison = await run.io_bound(poisoned_model.predict,x_test_poisoned, verbose=0)
             preds_poison_labels = nn_model.np.argmax(preds_poison, axis=1)
             acc_poison = nn_model.np.mean(preds_poison_labels == y_test_poisoned) * 100
-            poisoned_acc_ui.set_text(f"Accuracy on Poisoned Data: {acc_poison:.2f}%")
+
+            poisoned_acc_ui.set_text(f"Test Accuracy on Poisoned Model: {acc_poison:.2f}%") 
+            poisoned_loss_ui.set_text(f"Training loss: {poisoned_results[1]:.4f}")
+            poisoned_train_ui.set_text(f"Training Accuary: {poisoned_results[0]:.2f}%")
+           
+           
             print("Confusion matrix generations")
             # 10x10 confusion matrix
             cm = await run.io_bound(nn_model.confusion_matrix,y_test_poisoned, preds_poison_labels, labels=list(range(10)))
@@ -147,21 +226,20 @@ with ui.row().classes("w-full no-wrap items-start"):
             confusion_img_ui.set_source(
                 f"data:image/png;base64,{nn_model.plot_confusion(cm)}"
             )
-                    
             print("TRAIN FINISHED")
             ####################################################################
-
-        
         def reset():
                 clean_img_ui.set_source("")
                 poisoned_img_ui.set_source("")
                 clean_label_ui.set_text("Label:")
                 poisoned_label_ui.set_text("Label:")
-                clean_acc_ui.set_text("Accuracy on Clean Data:")
-                poisoned_acc_ui.set_text("Accuracy on Poisoned Data:")
+                clean_acc_ui.set_text("Test Accuracy on Clean Model:")
+                poisoned_acc_ui.set_text("Test Accuracy on Poisoned Model:")
+                clean_loss_ui.set_text("")
+                clean_train_ui.set_text("")
+                poisoned_loss_ui.set_text("")
+                poisoned_train_ui.set_text("")
                 confusion_img_ui.set_source("")
-
-
         ##################################################################################
         # RIGHT PANEL
     with ui.card().classes("w-3/4 p-4"): # 8/20 12/20 
@@ -178,17 +256,24 @@ with ui.row().classes("w-full no-wrap items-start"):
                     poisoned_label_ui = ui.label("Label:").classes("text-lg text-red-500")
 
             ui.separator()
-
             with ui.row().classes("items-start gap-4"):
 
                 with ui.column().classes("w-auto"):
                     ui.label("Model Performance").classes("text-xl font-bold")
-                    clean_acc_ui = ui.label("Accuracy on Clean Data:") \
+                    clean_acc_ui = ui.label("Test Accuracy on Clean Model:") \
+                        .classes("text-lg")
+                    clean_loss_ui = ui.label("") \
+                        .classes("text-lg")
+                    clean_train_ui = ui.label("") \
                         .classes("text-lg")
 
-                    poisoned_acc_ui = ui.label("Accuracy on Poisoned Data:") \
+                    poisoned_acc_ui = ui.label("Test Accuracy on Poisoned Model:") \
                         .classes("text-lg text-red-500")
-
+                    poisoned_loss_ui = ui.label("") \
+                        .classes("text-lg text-red-500")
+                    poisoned_train_ui = ui.label("") \
+                        .classes("text-lg text-red-500")
+                    
 
                 with ui.column().classes("ml-50"):
                     ui.label("Confusion Matrix").classes("text-xl font-bold mb-2 ml-25")
@@ -196,7 +281,6 @@ with ui.row().classes("w-full no-wrap items-start"):
     
     with ui.card().classes("w-1/5 p-4"): #####!!!!!!
             
-                #ui.separator()
                 ui.label("Data Augmentation").classes("text-xl font-bold")
                 ui.label("Mislabelling").classes("text-lg")
                 mislabel_aug = ui.slider(min=0, max=100, value = 0).props("label-always")
