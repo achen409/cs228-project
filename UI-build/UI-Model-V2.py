@@ -7,6 +7,8 @@ import nn_model
 import posion_model
 import data_augmentation
 
+random.seed(872)
+
 # -------------------------
 # Load MNIST once
 # -------------------------

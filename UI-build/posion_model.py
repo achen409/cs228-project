@@ -45,17 +45,11 @@ def color_invert(images, percent=0.1):
     M_images = images.copy()
     print(f"Shape of the image {M_images.shape}")
     if M_images.ndim == 2: 
-      #M_images[M_images != 0 ] = 0.001
-      #M_images[M_images == 0 ] = 0.999  
-      #return M_images
       return 1 - M_images
+    #######################
     n = int(len(images) * percent / 100)
     M_indices = np.random.choice(len(images), n, replace=False)#torch.randperm(num_samples)[:num_poison]
     ###########################################################
-    #selected = M_images[M_indices]
-    #M_images[selected != 0 ] = 0.001
-    #M_images[selected == 0 ] = 0.999
-    #M_images[M_indices] = selected
     M_images[M_indices] = 1 - M_images[M_indices]
     return M_images
 ################################################
