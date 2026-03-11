@@ -23,5 +23,7 @@ To launch the code, you will use this command: *python3 UI-build/UI-build/.py*
 
 Then open the URL in your browser: *http://localhost:8080/*
 
+
+![alttext](https://github.com/achen409/cs228-project/blob/main/UI_example_3.png)
 ![alt text](https://github.com/achen409/cs228-project/UI_example_1)
 
